@@ -87,7 +87,7 @@ function sceneChase(game, p) {
   setWeather(game.weather, WEATHER_STORM, 0.95);
   game.weatherTag = WEATHER_STORM;
   // The player, mid-flight east along the 1500 avenue.
-  const car = makeCar('sports', 2080, 1532, 0, game.rng);
+  const car = makeCar('sports', 2260, 1532, 0, game.rng);
   car.driver = 'player';
   car.speed = 395;
   car.color = '#ff5da2';
@@ -103,7 +103,7 @@ function sceneChase(game, p) {
   game.radioStation = 1;
   // Pursuit: two behind, one alongside.
   const spots = [
-    { x: 1900, y: 1568 }, { x: 1840, y: 1470 }, { x: 2210, y: 1620 },
+    { x: 2080, y: 1568 }, { x: 2020, y: 1470 }, { x: 2400, y: 1620 },
   ];
   for (const s of spots) {
     const cop = makeCar('police', s.x, s.y, 0.2, game.rng);
@@ -123,9 +123,9 @@ function sceneChase(game, p) {
   }
   game.police.blocks.push({ x: 2700, y: 1500, horizontal: false, cars: blockCars, spikes: true });
   // The helicopter hangs its light over the player.
-  game.police.heli = { x: 2330, y: 1330, angle: 2.2, phase: 3 };
+  game.police.heli = { x: 2500, y: 1340, angle: 2.2, phase: 3 };
   trafficNear(game, 1500, 900, 3);
-  focusCamera(game, p.x + 60, p.y);
+  focusCamera(game, p.x + 40, p.y);
 }
 
 function sceneRace(game, p) {
@@ -133,7 +133,8 @@ function sceneRace(game, p) {
   setClock(game, 18, 35); // dusk drizzle
   setWeather(game.weather, WEATHER_DRIZZLE, 0.45);
   game.weatherTag = WEATHER_DRIZZLE;
-  const car = makeCar('sports', 2520, 2560, 0.5, game.rng);
+  // On the 1500 avenue, racing east toward checkpoint 3 at (3300, 1500).
+  const car = makeCar('sports', 3020, 1532, 0, game.rng);
   car.driver = 'player';
   car.speed = 330;
   car.color = '#39d0ff';
@@ -142,12 +143,12 @@ function sceneRace(game, p) {
   p.x = car.x;
   p.y = car.y;
   game.money = 1720;
-  // Two rivals: one just ahead-left, one on the player's tail.
-  const rivalA = makeCar('sports', 2620, 2470, 0.7, game.rng);
+  // Two rivals: one just ahead in the other lane, one on the tail.
+  const rivalA = makeCar('sports', 3190, 1568, 0, game.rng);
   rivalA.driver = 'rival';
   rivalA.speed = 320;
   rivalA.raceCp = 2;
-  const rivalB = makeCar('sedan', 2400, 2660, 0.3, game.rng);
+  const rivalB = makeCar('sedan', 2880, 1470, 0, game.rng);
   rivalB.driver = 'rival';
   rivalB.speed = 300;
   rivalB.raceCp = 1;

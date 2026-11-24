@@ -129,7 +129,7 @@ export function buildCity(seed) {
   const city = {
     buildings, palms, lamps, props,
     respray: { x: 2135, y: 1535, w: 130, h: 130, name: 'SHINE & GO' },
-    raceFlag: { x: 2460, y: 2430 },
+    raceFlag: { x: 2460, y: 2700 },
     maraSpot: { x: 1560, y: 1560 },
     dock: { x: 3980, y: 2980 },
     marina: { x: 2560, y: 2560 },

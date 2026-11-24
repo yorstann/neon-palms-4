@@ -28,7 +28,7 @@ export function setWeather(w, state, intensity) {
   w.state = state;
   w.target = intensity;
   w.intensity = intensity;
-  w.puddle = Math.min(1, intensity + 0.25);
+  w.puddle = intensity * 0.9;
   w.timer = 9999;
 }
 

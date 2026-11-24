@@ -320,25 +320,37 @@ function step(g, dt) {
   g.weatherTag = g.weather.state;
   rainSound(g.screen === 'play' ? g.weather.intensity : 0);
 
-  // Interactions that share the E key with car entry: dialogue first,
-  // then the race flag (in a car), then mission offers.
+  // The E key is shared, so it is arbitrated here, highest priority
+  // first: dialogue advance, then the race flag (in a car), then car
+  // entry/exit inside updatePlayer, and whatever press is left over
+  // becomes the mission "interact" signal. pressed() is a latch, so
+  // exactly one consumer sees each press.
   g.interactPressed = false;
   g.interactHint = '';
+  let eHandled = false;
   if (g.dialogue) {
     if (pressed('e') || mouse.clicked) {
       g.dialogue.i += 1;
       if (g.dialogue.i >= g.dialogue.lines.length) g.dialogue = null;
+      eHandled = true;
     }
   } else if (g.player.car && g.side.race === null) {
     const flag = g.city.raceFlag;
     if (dist(g.player.x, g.player.y, flag.x, flag.y) < 95) {
       g.interactHint = 'E — START THE MARINA STREET RACE';
-      if (pressed('e')) { tryStartRace(g); g.interactPressed = true; }
+      if (pressed('e')) { tryStartRace(g); g.interactPressed = true; eHandled = true; }
+    }
+  } else if (!g.player.car && g.msn.phase === 'offer' && g.missions[g.msn.idx]) {
+    // Standing at a mission giver: E talks, it does not steal the
+    // car that happens to be parked behind you.
+    const start = g.missions[g.msn.idx].start;
+    if (dist(g.player.x, g.player.y, start.x, start.y) < 64) {
+      g.interactHint = 'E — TALK';
+      if (pressed('e')) { g.interactPressed = true; eHandled = true; }
     }
   }
-  if (!g.dialogue && !g.interactPressed && pressed('e')) g.interactPressed = true;
-
-  updatePlayer(g, dt);
+  if (!g.dialogue) updatePlayer(g, dt);
+  if (!eHandled && !g.interactPressed && pressed('e')) g.interactPressed = true;
   if (g.player.reloadAt && g.time >= g.player.reloadAt) {
     g.player.reloadAt = 0;
     finishReload(g);
@@ -391,8 +403,7 @@ function idleWorld(g, dt) {
   for (const ped of g.peds) updatePed(g, ped, dt);
   updateWeather(g.weather, dt, null);
   updateEffects(g.fx, dt);
-  const t = g.time + dt;
-  g.time = t;
+  const t = g.time;
   g.camera.x = clamp(1500 + Math.cos(t * 0.05) * 500 - VIEW.w / 2, 0, WORLD.w - VIEW.w);
   g.camera.y = clamp(1500 + Math.sin(t * 0.04) * 400 - VIEW.h / 2, 0, WORLD.h - VIEW.h);
 }
@@ -983,6 +994,10 @@ function drawSearchlight(g) {
   ctx.fill();
   ctx.restore();
 }
+
+// A read-only peek for automated play tests and curious players.
+// ------------------------------------------------------------------
+Object.defineProperty(window, '__neon', { get: () => game });
 
 // ------------------------------------------------------------------
 // Boot + main loop. Screenshot scenes stage themselves and freeze.
