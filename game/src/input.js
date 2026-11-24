@@ -1,53 +1,65 @@
-// Keyboard and pointer input. Held keys give a steering direction; one-shot presses (start or
-// restart, pause) are queued as bit flags and taken once by the loop, so a press between two
-// frames is never lost and never counted twice.
+// Keyboard and mouse state for the game.
+// Everything polls through the `keys` set and the mouse record, so the
+// simulation never touches DOM events directly and scripted screenshot
+// scenes can drive the same surface.
 
-export const ACTION_CONFIRM = 1;
-export const ACTION_PAUSE = 2;
+export const keys = new Set();
+export const mouse = { x: 0, y: 0, down: false, clicked: false };
 
-const LEFT = new Set(['ArrowLeft', 'KeyA']);
-const RIGHT = new Set(['ArrowRight', 'KeyD']);
-const CONFIRM = new Set(['Space', 'Enter']);
-const PAUSE = new Set(['KeyP', 'Escape']);
+const GAME_KEYS = new Set([
+  'arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ',
+]);
 
-export function createInput(target) {
-  let left = false;
-  let right = false;
-  let actions = 0;
+let attached = false;
 
-  window.addEventListener('keydown', (event) => {
-    if (LEFT.has(event.code)) left = true;
-    else if (RIGHT.has(event.code)) right = true;
-    else if (CONFIRM.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_CONFIRM;
-    } else if (PAUSE.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_PAUSE;
-    } else return;
-    event.preventDefault();
+/** Wire DOM listeners into the shared state. Safe to call once. */
+export function attachInput(canvas) {
+  if (attached) return;
+  attached = true;
+  window.addEventListener('keydown', (ev) => {
+    const k = ev.key.toLowerCase();
+    if (GAME_KEYS.has(k)) ev.preventDefault();
+    keys.add(k);
   });
-  window.addEventListener('keyup', (event) => {
-    if (LEFT.has(event.code)) left = false;
-    else if (RIGHT.has(event.code)) right = false;
+  window.addEventListener('keyup', (ev) => {
+    keys.delete(ev.key.toLowerCase());
   });
-  // A key released while the tab is hidden never sends keyup: let go of everything on blur.
   window.addEventListener('blur', () => {
-    left = false;
-    right = false;
+    keys.clear();
+    mouse.down = false;
   });
-  target.addEventListener('pointerdown', () => {
-    actions |= ACTION_CONFIRM;
+  canvas.addEventListener('mousemove', (ev) => {
+    const r = canvas.getBoundingClientRect();
+    mouse.x = ((ev.clientX - r.left) / r.width) * canvas.width;
+    mouse.y = ((ev.clientY - r.top) / r.height) * canvas.height;
   });
+  canvas.addEventListener('mousedown', (ev) => {
+    if (ev.button === 0) {
+      mouse.down = true;
+      mouse.clicked = true;
+    }
+  });
+  window.addEventListener('mouseup', (ev) => {
+    if (ev.button === 0) mouse.down = false;
+  });
+}
 
-  return {
-    /** -1 for left, 1 for right, 0 for neither or both. */
-    direction() {
-      return (right ? 1 : 0) - (left ? 1 : 0);
-    },
-    /** The one-shot presses since the last call, as ACTION_* flags. */
-    takeActions() {
-      const taken = actions;
-      actions = 0;
-      return taken;
-    },
-  };
+/** True while any of the named keys is held. Names are lowercase. */
+export function held(...names) {
+  for (const n of names) if (keys.has(n)) return true;
+  return false;
+}
+
+/** One-shot press latch: true once per physical press of `name`. */
+const latched = new Map();
+export function pressed(name) {
+  const isDown = keys.has(name);
+  const was = latched.get(name) || false;
+  latched.set(name, isDown);
+  return isDown && !was;
+}
+
+/** Call at the end of each frame to clear per-frame mouse state. */
+export function endFrame() {
+  mouse.clicked = false;
 }
